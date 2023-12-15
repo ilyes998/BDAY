@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birthday Cake App</title>
+  <style>
+    #cake {
+      position: relative;
+      width: 300px;
+      height: 400px;
+      background-color: #f0e68c;
+    }
+
+    .candle {
+      position: absolute;
+      background-color: #ff4500;
+      width: 10px;
+      height: 100px;
+      bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Birthday Cake App</h1>
+  <label for="candleCount">Number of Candles:</label>
+  <input type="number" id="candleCount" min="1" value="0">
+  <button onclick="addCandles()">Add Candles</button>
+  <button onclick="blowCandles()">Blow Candles</button>
+
+  <div id="cake"></div>
+
+  <script>
+    function addCandles() {
+      const candleCount = document.getElementById('candleCount').value;
+      const cake = document.getElementById('cake');
+      
+      // Remove existing candles
+      cake.innerHTML = '';
+
+      // Add new candles
+      for (let i = 0; i < candleCount; i++) {
+        const candle = document.createElement('div');
+        candle.className = 'candle';
+        candle.style.left = `${i * (300 / candleCount)}px`;
+        cake.appendChild(candle);
+      }
+    }
+
+    function blowCandles() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          const microphone = audioContext.createMediaStreamSource(stream);
+          microphone.connect(analyser);
+
+          analyser.fftSize = 256;
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+
+          analyser.getByteFrequencyData(dataArray);
+
+          const averageVolume = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+
+          // Assuming that louder sounds will be associated with blowing, you can adjust the threshold as needed.
+          const blowThreshold = 70;
+
+          if (averageVolume > blowThreshold) {
+            const cake = document.getElementById('cake');
+            cake.innerHTML = ''; // Remove all candles
+          }
+
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(error => console.error('Error accessing microphone:', error));
+    }
+  </script>
+</body>
+</html>
